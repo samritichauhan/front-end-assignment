@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Components Showcase</title>
+    <!-- Include Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            @apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100;
+            transition: background-color 0.3s ease;
+        }
+        .section-card {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease-in-out;
+        }
+        .section-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="p-8">
+
+    <!-- The main application container -->
+    <div id="app" class="max-w-4xl mx-auto space-y-12">
+        <h1 class="text-4xl font-bold text-center mb-12 text-gray-800 dark:text-white">
+            Component Showcase
+        </h1>
+
+        <!-- InputField Section -->
+        <section class="bg-white p-8 rounded-xl dark:bg-gray-900 section-card">
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
+                InputField Component
+            </h2>
+            <div id="input-field-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Input fields will be rendered here by JavaScript -->
+            </div>
+            <button id="login-button" class="mt-8 px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-colors duration-300 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                Submit
+            </button>
+        </section>
+
+        <!-- DataTable Section -->
+        <section class="bg-white p-8 rounded-xl dark:bg-gray-900 section-card">
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-white mb-6">
+                DataTable Component
+            </h2>
+            <div class="space-y-6">
+                <h3 class="text-xl font-medium">Sortable Table</h3>
+                <div id="sortable-table-container"></div>
+                
+                <h3 class="text-xl font-medium mt-8">Table with Row Selection</h3>
+                <div id="selectable-table-container"></div>
+
+                <h3 class="text-xl font-medium mt-8">Loading State</h3>
+                <div id="loading-table-container"></div>
+
+                <h3 class="text-xl font-medium mt-8">Empty State</h3>
+                <div id="empty-table-container"></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Data for the components
+        const mockUsers = [
+            { id: 1, name: 'Alice Smith', email: 'alice@example.com', role: 'Admin' },
+            { id: 2, name: 'Bob Johnson', email: 'bob@example.com', role: 'User' },
+            { id: 3, name: 'Charlie Brown', email: 'charlie@example.com', role: 'User' },
+            { id: 4, name: 'David Wilson', email: 'david@example.com', role: 'Editor' },
+            { id: 5, name: 'Eve Davis', email: 'eve@example.com', role: 'User' },
+        ];
+
+        const userColumns = [
+            { key: 'name', header: 'Name', sortable: true },
+            { key: 'email', header: 'Email' },
+            { key: 'role', header: 'Role', sortable: true },
+        ];
+
+        // Global state for input fields
+        let emailValue = '';
+        let passwordValue = '';
+        let loading = false;
+
+        // Helper function for creating elements with classes and content
+        const createEl = (tag, classes = '', content = '') => {
+            const el = document.createElement(tag);
+            if (classes) {
+                el.className = classes;
+            }
+            if (content) {
+                el.innerHTML = content;
+            }
+            return el;
+        };
+
+        // --- InputField Component ---
+        const createInputField = (props, onInputChange = null) => {
+            const container = createEl('div', 'flex flex-col space-y-1');
+            
+            if (props.label) {
+                const label = createEl('label', 'text-sm font-medium text-gray-700 dark:text-gray-300', props.label);
+                container.appendChild(label);
+            }
+
+            const inputWrapper = createEl('div', 'relative');
+            const input = createEl('input');
+            
+            // Tailwind classes
+            const baseClasses = 'w-full rounded-lg transition-all duration-200 focus:ring-2';
+            const sizeClasses = { sm: 'p-2 text-sm', md: 'p-3 text-base', lg: 'p-4 text-lg' };
+            const variantClasses = {
+                outlined: 'border border-gray-300 focus:outline-none focus:ring-blue-500',
+                filled: 'bg-gray-100 border border-transparent focus:outline-none focus:ring-blue-500',
+                ghost: 'bg-transparent border-b border-gray-300 focus:outline-none focus:ring-blue-500'
+            };
+            const stateClasses = {
+                disabled: 'opacity-50 cursor-not-allowed',
+                invalid: 'border-red-500 focus:ring-red-500',
+            };
+
+            input.className = `${baseClasses} ${sizeClasses[props.inputSize || 'md']} ${variantClasses[props.variant || 'outlined']} ${props.invalid ? stateClasses.invalid : ''} ${props.disabled || props.loading ? stateClasses.disabled : ''}`;
+            
+            input.type = props.type || 'text';
+            input.placeholder = props.placeholder || '';
+            input.value = props.value || '';
+            input.disabled = props.disabled || props.loading;
+
+            // Handle input changes
+            if (onInputChange) {
+                input.addEventListener('input', onInputChange);
+            }
+
+            // Optional features
+            const isPassword = props.type === 'password';
+            const hasValue = !!props.value;
+
+            if (props.loading) {
+                const loaderIcon = createEl('div', 'absolute right-3 top-1/2 -translate-y-1/2 text-blue-500 animate-spin',
+                    `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg>`);
+                inputWrapper.appendChild(loaderIcon);
+            }
+
+            if (!props.loading && hasValue) {
+                if (isPassword) {
+                    const toggleBtn = createEl('button', 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300',
+                        `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3" /></svg>`);
+                    toggleBtn.type = 'button';
+                    toggleBtn.addEventListener('click', () => {
+                        input.type = input.type === 'password' ? 'text' : 'password';
+                    });
+                    inputWrapper.appendChild(toggleBtn);
+                } else {
+                    const clearBtn = createEl('button', 'absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300',
+                        `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>`);
+                    clearBtn.type = 'button';
+                    clearBtn.addEventListener('click', () => {
+                        input.value = '';
+                        input.dispatchEvent(new Event('input', { bubbles: true })); // Trigger change event
+                    });
+                    inputWrapper.appendChild(clearBtn);
+                }
+            }
+
+            inputWrapper.prepend(input);
+            container.appendChild(inputWrapper);
+
+            if (props.helperText && !props.errorMessage) {
+                const helper = createEl('p', 'text-xs text-gray-500 dark:text-gray-400', props.helperText);
+                container.appendChild(helper);
+            }
+            if (props.errorMessage && props.invalid) {
+                const error = createEl('p', 'text-xs text-red-500 dark:text-red-400', props.errorMessage);
+                container.appendChild(error);
+            }
+
+            return container;
+        };
+
+        const renderInputFields = () => {
+            const container = document.getElementById('input-field-container');
+            if (!container) return;
+            container.innerHTML = ''; // Clear previous content
+
+            const inputFieldsData = [
+                { label: 'Outlined Email', placeholder: 'Enter email', type: 'email', value: emailValue, invalid: !emailValue.includes('@') && emailValue !== '', errorMessage: 'Invalid email format' },
+                { label: 'Filled Password', variant: 'filled', type: 'password', value: passwordValue },
+                { label: 'Ghost Input', variant: 'ghost', placeholder: 'Enter something here' },
+                { label: 'Disabled Input', disabled: true, value: 'Can\'t type here' },
+                { label: 'Small Size', inputSize: 'sm', placeholder: 'Small input' },
+                { label: 'Large Size', inputSize: 'lg', placeholder: 'Large input' },
+                { label: 'Loading State', loading: loading, value: loading ? 'Submitting...' : '' },
+            ];
+            
+            inputFieldsData.forEach(props => {
+                const field = createInputField(props, (e) => {
+                    if (props.label === 'Outlined Email') {
+                        emailValue = e.target.value;
+                    } else if (props.label === 'Filled Password') {
+                        passwordValue = e.target.value;
+                    }
+                    renderInputFields(); // Re-render to update state
+                });
+                container.appendChild(field);
+            });
+        };
+
+        // Handle login button click
+        const loginButton = document.getElementById('login-button');
+        loginButton.addEventListener('click', () => {
+            if (loading) return;
+            loading = true;
+            renderInputFields();
+
+            setTimeout(() => {
+                loading = false;
+                renderInputFields();
+                console.log('Login attempt with:', { email: emailValue, password: passwordValue });
+                // Reset fields
+                emailValue = '';
+                passwordValue = '';
+                renderInputFields();
+            }, 2000);
+        });
+
+        // --- DataTable Component ---
+        const createDataTable = (data, columns, options = {}) => {
+            const { loading = false, selectable = false } = options;
+            const container = createEl('div', 'w-full overflow-x-auto shadow-lg rounded-lg');
+
+            if (loading) {
+                container.className = "flex items-center justify-center p-8 text-gray-500 dark:text-gray-400";
+                container.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56" /></svg> Loading...`;
+                return container;
+            }
+
+            if (data.length === 0) {
+                container.className = "flex items-center justify-center p-8 text-gray-500 dark:text-gray-400";
+                container.innerHTML = `No data to display.`;
+                return container;
+            }
+            
+            const table = createEl('table', 'min-w-full divide-y divide-gray-200 dark:divide-gray-700');
+            const thead = createEl('thead', 'bg-gray-50 dark:bg-gray-800');
+            const tbody = createEl('tbody', 'bg-white divide-y divide-gray-200 dark:bg-gray-900 dark:divide-gray-700');
+            const headerRow = createEl('tr');
+
+            // Header cells
+            if (selectable) {
+                const th = createEl('th', 'p-3 text-left text-xs font-medium text-gray-500 uppercase');
+                const checkbox = createEl('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'rounded-sm text-blue-600 focus:ring-blue-500';
+                th.appendChild(checkbox);
+                headerRow.appendChild(th);
+            }
+            
+            columns.forEach(col => {
+                const th = createEl('th', `p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${col.sortable ? 'cursor-pointer select-none' : ''}`);
+                th.textContent = col.header;
+                if (col.sortable) {
+                    const sortIcon = createEl('span', 'ml-1 text-xs opacity-30',
+                        `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M12 19l7-7M12 19l-7-7" /></svg>`);
+                    th.appendChild(sortIcon);
+                }
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            // Body rows
+            data.forEach(row => {
+                const tr = createEl('tr', 'hover:bg-gray-100 dark:hover:bg-gray-700');
+                if (selectable) {
+                    const td = createEl('td', 'p-3 whitespace-nowrap');
+                    const checkbox = createEl('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'rounded-sm text-blue-600 focus:ring-blue-500';
+                    td.appendChild(checkbox);
+                    tr.appendChild(td);
+                }
+                columns.forEach(col => {
+                    const td = createEl('td', 'p-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100');
+                    td.textContent = row[col.key];
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+            container.appendChild(table);
+
+            return container;
+        };
+
+        const renderDataTables = () => {
+            // Sortable Table
+            const sortableContainer = document.getElementById('sortable-table-container');
+            if (sortableContainer) sortableContainer.innerHTML = '';
+            sortableContainer.appendChild(createDataTable(mockUsers, userColumns));
+
+            // Selectable Table
+            const selectableContainer = document.getElementById('selectable-table-container');
+            if (selectableContainer) selectableContainer.innerHTML = '';
+            selectableContainer.appendChild(createDataTable(mockUsers, userColumns, { selectable: true }));
+
+            // Loading State
+            const loadingContainer = document.getElementById('loading-table-container');
+            if (loadingContainer) loadingContainer.innerHTML = '';
+            loadingContainer.appendChild(createDataTable([], userColumns, { loading: true }));
+
+            // Empty State
+            const emptyContainer = document.getElementById('empty-table-container');
+            if (emptyContainer) emptyContainer.innerHTML = '';
+            emptyContainer.appendChild(createDataTable([], userColumns));
+        };
+
+        // Initialize components on page load
+        window.onload = () => {
+            renderInputFields();
+            renderDataTables();
+        };
+    </script>
+</body>
+</html>
